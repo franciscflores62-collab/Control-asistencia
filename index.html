@@ -6,8 +6,33 @@
     <title>Sistema de Control de Asistencia</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .card { max-width: 440px; width: 100%; background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #0f2745 0%, #1a4d80 45%, #2f7bb5 100%);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .card {
+            max-width: 440px;
+            width: 100%;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+        }
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+        .logo-container img {
+            max-width: 130px;
+            max-height: 90px;
+            object-fit: contain;
+        }
         h2 { text-align: center; color: #1a1a1a; margin-bottom: 20px; font-size: 24px; }
         label { display: block; margin-bottom: 6px; color: #4a4a4a; font-size: 14px; font-weight: 600; }
         input, select { width: 100%; padding: 12px; margin-bottom: 18px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 16px; background-color: #f8fafc; transition: border-color 0.2s; }
@@ -25,11 +50,22 @@
 <body>
 
 <div class="card">
+    <div class="logo-container">
+        <img src="https://drive.google.com/uc?export=view&id=13kiYUufUyOvvDa5AeCc3vbdMuVCCeO3Q" alt="Logo empresa">
+    </div>
     <h2>Control de Asistencia</h2>
-    
+
     <label for="nombre">Nombre Completo del Empleado</label>
-    <input type="text" id="nombre" placeholder="Ej. Juan Pérez" required>
-    
+    <select id="nombre" required>
+        <option value="" disabled selected>Selecciona un empleado</option>
+        <option value="Francisco Aguilar">Francisco Aguilar</option>
+        <option value="Abel Rodriguez">Abel Rodriguez</option>
+        <option value="Roberto Zuniga">Roberto Zuniga</option>
+        <option value="Issac Pineda">Issac Pineda</option>
+        <option value="Josue Jimenez">Josue Jimenez</option>
+        <option value="Darwin Valiente">Darwin Valiente</option>
+    </select>
+
     <label for="tipo">Tipo de Registro</label>
     <select id="tipo">
         <option value="Entrada">Entrada</option>
@@ -54,7 +90,7 @@
     const btnRegistrar = document.getElementById('btnRegistrar');
     const status = document.getElementById('status');
     const contexto = lienzo.getContext('2d');
-    
+
     let latitudActual = null;
     let longitudActual = null;
     let camaraLista = false;
@@ -72,13 +108,13 @@
 
     // 1. Inicializar Cámara (Frontal preferentemente en móviles)
     navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-        .then(stream => { 
-            camara.srcObject = stream; 
+        .then(stream => {
+            camara.srcObject = stream;
             camaraLista = true;
             verificarReady();
         })
-        .catch(err => { 
-            status.innerText = "Error crítico: Activa los permisos de la cámara."; 
+        .catch(err => {
+            status.innerText = "Error crítico: Activa los permisos de la cámara.";
             status.className = "error";
         });
 
@@ -91,8 +127,8 @@
                 gpsListo = true;
                 verificarReady();
             },
-            error => { 
-                status.innerText = "Error crítico: Activa la ubicación (GPS) de tu dispositivo."; 
+            error => {
+                status.innerText = "Error crítico: Activa la ubicación (GPS) de tu dispositivo.";
                 status.className = "error";
             },
             { enableHighAccuracy: true, timeout: 10000 }
@@ -102,13 +138,45 @@
         status.className = "error";
     }
 
+    // Dibuja fecha y hora sobre la foto capturada
+    function dibujarMarcaDeTiempo() {
+        const ahora = new Date();
+        const fecha = ahora.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const hora = ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const texto = fecha + '  ' + hora;
+
+        const tamanoFuente = Math.max(16, Math.round(lienzo.width * 0.035));
+        contexto.font = 'bold ' + tamanoFuente + 'px Arial';
+        contexto.textBaseline = 'bottom';
+        contexto.textAlign = 'right';
+
+        const paddingX = 10;
+        const paddingY = 8;
+        const anchoTexto = contexto.measureText(texto).width;
+        const altoCaja = tamanoFuente + paddingY * 2;
+        const anchoCaja = anchoTexto + paddingX * 2;
+
+        // Fondo semitransparente para legibilidad
+        contexto.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        contexto.fillRect(
+            lienzo.width - anchoCaja - 10,
+            lienzo.height - altoCaja - 10,
+            anchoCaja,
+            altoCaja
+        );
+
+        // Texto de fecha/hora
+        contexto.fillStyle = '#ffffff';
+        contexto.fillText(texto, lienzo.width - 10 - paddingX, lienzo.height - 10 - paddingY);
+    }
+
     // 3. Envío de Datos a Producción
     function registrarAsistencia() {
-        const nombre = document.getElementById('nombre').value.trim();
+        const nombre = document.getElementById('nombre').value;
         const tipo = document.getElementById('tipo').value;
 
         if (!nombre) {
-            alert("Por favor, ingresa tu nombre completo.");
+            alert("Por favor, selecciona el nombre del empleado.");
             return;
         }
 
@@ -121,6 +189,7 @@
         lienzo.width = camara.videoWidth;
         lienzo.height = camara.videoHeight;
         contexto.drawImage(camara, 0, 0, lienzo.width, lienzo.height);
+        dibujarMarcaDeTiempo();
         const fotoBase64 = lienzo.toDataURL('image/jpeg', 0.8); // Compresión al 80% para ahorrar cuota de red
 
         const payload = {
@@ -144,7 +213,7 @@
             if (res.status === "success") {
                 status.innerText = "✅ " + res.message;
                 status.className = "success";
-                document.getElementById('nombre').value = ""; // Limpiar campo
+                document.getElementById('nombre').selectedIndex = 0; // Reestablecer selección
             } else {
                 status.innerText = "❌ Error en servidor: " + res.message;
                 status.className = "error";
